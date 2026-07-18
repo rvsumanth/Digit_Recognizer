@@ -1,5 +1,7 @@
 # Trained models
-model/saved_models/*.h5
+# model/saved_models/*.h5
+model/saved_models/best_mnist_model.h5
+
 
 # Python
 __pycache__/
