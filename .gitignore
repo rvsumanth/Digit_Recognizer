@@ -1,0 +1,12 @@
+# Trained models
+model/saved_models/*.h5
+
+# Python
+__pycache__/
+*.pyc
+venv/
+.venv/
+env
+
+# OS
+.DS_Store
