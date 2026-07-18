@@ -1,0 +1,455 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Digit Recognizer</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #EDEFF3;
+    --panel: #FFFFFF;
+    --ink: #14161C;
+    --ink-soft: #5B6270;
+    --accent: #3457D5;
+    --accent-soft: #DCE3FA;
+    --warn: #E8A33D;
+    --line: rgba(52, 87, 213, 0.14);
+    --radius: 10px;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    min-height: 100vh;
+    background:
+      repeating-linear-gradient(0deg, var(--line) 0 1px, transparent 1px 28px),
+      repeating-linear-gradient(90deg, var(--line) 0 1px, transparent 1px 28px),
+      var(--bg);
+    font-family: 'Manrope', sans-serif;
+    color: var(--ink);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 32px 16px;
+  }
+
+  .app {
+    width: 100%;
+    max-width: 920px;
+    background: var(--panel);
+    border: 1px solid rgba(20,22,28,0.08);
+    border-radius: 14px;
+    box-shadow: 0 24px 48px -24px rgba(20,22,28,0.25);
+    overflow: hidden;
+  }
+
+  header {
+    padding: 22px 28px;
+    border-bottom: 1px solid rgba(20,22,28,0.08);
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+  }
+
+  header h1 {
+    font-size: 15px;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    font-weight: 600;
+    margin: 0;
+  }
+
+  header .tag {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    color: var(--ink-soft);
+  }
+
+  .layout {
+    display: grid;
+    grid-template-columns: 400px 1fr;
+  }
+
+  @media (max-width: 720px) {
+    .layout { grid-template-columns: 1fr; }
+  }
+
+  .draw-pane {
+    padding: 28px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 16px;
+    border-right: 1px solid rgba(20,22,28,0.08);
+  }
+
+  @media (max-width: 720px) {
+    .draw-pane { border-right: none; border-bottom: 1px solid rgba(20,22,28,0.08); }
+  }
+
+  #canvas {
+    background: #0B0C10;
+    border-radius: var(--radius);
+    touch-action: none;
+    cursor: crosshair;
+    box-shadow: inset 0 0 0 1px rgba(255,255,255,0.06);
+  }
+
+  .hint {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: var(--ink-soft);
+    text-align: center;
+  }
+
+  .controls {
+    display: flex;
+    gap: 10px;
+    width: 100%;
+  }
+
+  button {
+    flex: 1;
+    font-family: 'Manrope', sans-serif;
+    font-weight: 600;
+    font-size: 13px;
+    padding: 11px 14px;
+    border-radius: 8px;
+    border: 1px solid transparent;
+    cursor: pointer;
+    transition: transform 0.08s ease, background 0.15s ease;
+  }
+
+  button:active { transform: scale(0.97); }
+
+  .btn-primary {
+    background: var(--ink);
+    color: #fff;
+  }
+  .btn-primary:hover { background: #262a35; }
+
+  .btn-secondary {
+    background: transparent;
+    color: var(--ink-soft);
+    border-color: rgba(20,22,28,0.15);
+  }
+  .btn-secondary:hover { border-color: var(--ink); color: var(--ink); }
+
+  .result-pane {
+    padding: 28px;
+    display: flex;
+    flex-direction: column;
+    gap: 22px;
+  }
+
+  .readout {
+    display: flex;
+    align-items: center;
+    gap: 22px;
+  }
+
+  .readout-digit {
+    font-family: 'JetBrains Mono', monospace;
+    font-weight: 700;
+    font-size: 88px;
+    line-height: 1;
+    color: var(--accent);
+    background: var(--accent-soft);
+    border-radius: var(--radius);
+    width: 130px;
+    height: 130px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    transition: color 0.2s ease;
+  }
+
+  .readout-meta { font-family: 'JetBrains Mono', monospace; }
+
+  .readout-meta .label {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--ink-soft);
+    margin-bottom: 6px;
+  }
+
+  .readout-meta .confidence {
+    font-size: 26px;
+    font-weight: 600;
+  }
+
+  .readout-meta .confidence.low { color: var(--warn); }
+
+  .bars {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .bars .label {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--ink-soft);
+    font-family: 'JetBrains Mono', monospace;
+    margin-bottom: 2px;
+  }
+
+  .bar-row {
+    display: grid;
+    grid-template-columns: 18px 1fr 48px;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .bar-row .digit-tag {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    color: var(--ink-soft);
+    text-align: right;
+  }
+
+  .bar-track {
+    height: 14px;
+    background: #F0F1F5;
+    border-radius: 4px;
+    overflow: hidden;
+  }
+
+  .bar-fill {
+    height: 100%;
+    width: 0%;
+    background: var(--accent);
+    border-radius: 4px;
+    transition: width 0.25s ease;
+  }
+
+  .bar-row.top .bar-fill { background: var(--ink); }
+  .bar-row.top .digit-tag { color: var(--ink); font-weight: 600; }
+
+  .bar-row .pct {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    color: var(--ink-soft);
+    text-align: right;
+  }
+
+  footer {
+    padding: 16px 28px;
+    border-top: 1px solid rgba(20,22,28,0.08);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  footer .credit {
+    font-family: 'Manrope', sans-serif;
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--ink-soft);
+  }
+
+  footer .credit strong {
+    color: var(--ink);
+    font-weight: 700;
+  }
+
+  footer .github a {
+    font-family: 'Manrope', sans-serif;
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--ink-soft);
+    text-decoration: none;
+  }
+
+  footer .stack {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: var(--ink-soft);
+    letter-spacing: 0.02em;
+  }
+</style>
+</head>
+<body>
+
+<div class="app">
+  <header>
+    <h1>Digit Recognizer</h1>
+    <span class="tag">CNN &middot; MNIST &middot; FastAPI</span>
+  </header>
+
+  <div class="layout">
+    <div class="draw-pane">
+      <canvas id="canvas" width="320" height="320"></canvas>
+      <div class="hint">draw one digit, 0&ndash;9</div>
+      <div class="controls">
+        <button class="btn-secondary" id="clearBtn">Clear</button>
+        <button class="btn-primary" id="predictBtn">Predict</button>
+      </div>
+    </div>
+
+    <div class="result-pane">
+      <div class="readout">
+        <div class="readout-digit" id="digitOut">&mdash;</div>
+        <div class="readout-meta">
+          <div class="label">Confidence</div>
+          <div class="confidence" id="confidenceOut">&mdash;</div>
+        </div>
+      </div>
+
+      <div class="bars">
+        <div class="label">Probability by digit</div>
+        <div id="barList"></div>
+      </div>
+    </div>
+  </div>
+
+  <footer>
+    <span class="credit">Built by <strong>Venkata Sumanth Rayasam</strong></span>
+    <span class="github"><a href="https://github.com/rvsumanth/Digit_Recognizer"><strong>Github Repository</strong></a></span>
+    <span class="stack">CNN &middot; TensorFlow &middot; FastAPI</span>
+  </footer>
+</div>
+
+<script>
+  const canvas = document.getElementById('canvas');
+  const ctx = canvas.getContext('2d');
+  const digitOut = document.getElementById('digitOut');
+  const confidenceOut = document.getElementById('confidenceOut');
+  const barList = document.getElementById('barList');
+  const clearBtn = document.getElementById('clearBtn');
+  const predictBtn = document.getElementById('predictBtn');
+
+  let drawing = false;
+  let hasStroke = false;
+  let last = null;
+
+  function resetCanvas() {
+    ctx.fillStyle = '#0B0C10';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.strokeStyle = '#FFFFFF';
+    ctx.lineWidth = 18;
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+    hasStroke = false;
+  }
+  resetCanvas();
+
+  // build the 10 bar rows once
+  for (let i = 0; i < 10; i++) {
+    const row = document.createElement('div');
+    row.className = 'bar-row';
+    row.id = 'row-' + i;
+    row.innerHTML = `
+      <div class="digit-tag">${i}</div>
+      <div class="bar-track"><div class="bar-fill" id="fill-${i}"></div></div>
+      <div class="pct" id="pct-${i}">0%</div>
+    `;
+    barList.appendChild(row);
+  }
+
+  function getPos(e) {
+    const rect = canvas.getBoundingClientRect();
+    const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+    const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+    return {
+      x: (clientX - rect.left) * (canvas.width / rect.width),
+      y: (clientY - rect.top) * (canvas.height / rect.height),
+    };
+  }
+
+  function startDraw(e) {
+    drawing = true;
+    hasStroke = true;
+    last = getPos(e);
+    e.preventDefault();
+  }
+
+  function moveDraw(e) {
+    if (!drawing) return;
+    const pos = getPos(e);
+    ctx.beginPath();
+    ctx.moveTo(last.x, last.y);
+    ctx.lineTo(pos.x, pos.y);
+    ctx.stroke();
+    last = pos;
+    e.preventDefault();
+  }
+
+  function endDraw(e) {
+    if (!drawing) return;
+    drawing = false;
+    last = null;
+    if (hasStroke) predict();
+  }
+
+  canvas.addEventListener('mousedown', startDraw);
+  canvas.addEventListener('mousemove', moveDraw);
+  window.addEventListener('mouseup', endDraw);
+
+  canvas.addEventListener('touchstart', startDraw, { passive: false });
+  canvas.addEventListener('touchmove', moveDraw, { passive: false });
+  canvas.addEventListener('touchend', endDraw);
+
+  clearBtn.addEventListener('click', () => {
+    resetCanvas();
+    digitOut.textContent = '\u2014';
+    confidenceOut.textContent = '\u2014';
+    confidenceOut.classList.remove('low');
+    for (let i = 0; i < 10; i++) {
+      document.getElementById('fill-' + i).style.width = '0%';
+      document.getElementById('pct-' + i).textContent = '0%';
+      document.getElementById('row-' + i).classList.remove('top');
+    }
+  });
+
+  predictBtn.addEventListener('click', predict);
+
+  async function predict() {
+    if (!hasStroke) return;
+    const dataUrl = canvas.toDataURL('image/png');
+
+    let res;
+    try {
+      res = await fetch('/predict', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ image: dataUrl }),
+      });
+    } catch (err) {
+      digitOut.textContent = '!';
+      confidenceOut.textContent = 'server unreachable';
+      return;
+    }
+
+    if (!res.ok) {
+      digitOut.textContent = '!';
+      confidenceOut.textContent = 'prediction failed';
+      return;
+    }
+
+    const data = await res.json();
+    digitOut.textContent = data.digit;
+
+    const pct = data.confidence * 100;
+    confidenceOut.textContent = pct.toFixed(1) + '%';
+    confidenceOut.classList.toggle('low', pct < 60);
+
+    data.probabilities.forEach((p, i) => {
+      const widthPct = (p * 100).toFixed(1);
+      document.getElementById('fill-' + i).style.width = widthPct + '%';
+      document.getElementById('pct-' + i).textContent = widthPct + '%';
+      document.getElementById('row-' + i).classList.toggle('top', i === data.digit);
+    });
+  }
+</script>
+
+</body>
+</html>
