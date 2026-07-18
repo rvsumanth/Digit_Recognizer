@@ -5,7 +5,7 @@ with your mouse or finger, and a CNN trained on MNIST predicts what you drew
 in real time — complete with a full confidence breakdown across all ten
 digits.
 
-Live demo: _add your Render URL here once deployed_
+Live demo: https://digit-recognizer-webapp.onrender.com
 
 ## Screenshots
 
